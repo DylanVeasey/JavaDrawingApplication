@@ -2,7 +2,6 @@ package com.company;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Scanner;
 
 abstract class Shape
@@ -20,11 +19,38 @@ abstract class Shape
     }
 
     abstract public void paint(Graphics g);
+
+    abstract public void update(int xIncrement, int yIncrement);
 }
+
+class shapeGroup extends Shape{
+
+    ArrayList<Shape> shapesGroup = new ArrayList<>();
+
+
+    public shapeGroup(String name) {
+        super(name);
+    }
+
+    @Override
+    public void paint(Graphics g) {
+        for(Shape shape : shapesGroup){
+            shape.paint(g);
+        }
+    }
+
+    @Override
+    public void update(int xIncrement, int yIncrement) {
+        for(Shape shape : shapesGroup){
+            shape.update(xIncrement, yIncrement);
+        }
+    }
+}
+
 
 class Line extends Shape
 {
-    private final int x1, y1, x2, y2;
+    private int x1, y1, x2, y2;
 
     public Line(String name, int x1, int y1, int x2, int y2)
     {
@@ -40,11 +66,22 @@ class Line extends Shape
     {
         g.drawLine(x1, y1, x2, y2);
     }
+
+    @Override
+    public void update(int xIncrement, int yIncrement) {
+        this.x1 += xIncrement;
+        this.x2 += xIncrement;
+
+        this.y1 += yIncrement;
+        this.y2 += yIncrement;
+    }
+
+
 }
 
 class regularPolygon extends Shape
 {
-    private final int x1,y1,sides, size;
+    private int x1,y1,sides, size;
 
     private final ArrayList<Integer> xValues = new ArrayList<>();
     private final ArrayList<Integer> yValues = new ArrayList<>();
@@ -67,20 +104,28 @@ class regularPolygon extends Shape
             xValues.add((int) (x1 + size * Math.sin(i * angle)));
             yValues.add((int) (y1 + size * Math.cos(i * angle)));
         }
-
-
     }
-
 
     public void paint(Graphics g) {
         g.drawPolygon(xValues.stream().mapToInt(Integer::intValue).toArray(), yValues.stream().mapToInt(Integer::intValue).toArray(), sides);
     }
+
+    @Override
+    public void update(int xIncrement, int yIncrement) {
+        this.x1 += xIncrement;
+        this.y1 += yIncrement;
+
+        xValues.clear();
+        yValues.clear();
+        calculatePoint(this.x1, this.y1, this.sides, this.size);
+    }
+
 }
 
 
 class smiley extends Shape
 {
-    private final int x1, y1, size;
+    private int x1, y1, size;
 
     public smiley(String name, int x1, int y1, int size) {
         super(name);
@@ -96,9 +141,15 @@ class smiley extends Shape
         g.drawRect(x1 + (size / 2), y1 + (size / 4), size/10,size/10);
         g.drawLine(x1 + (size / 4),y1 + (size / 2) , x1 + (size) ,y1 + (size / 2));
     }
+
+    @Override
+    public void update(int xIncrement, int yIncrement) {
+        this.x1 += xIncrement;
+        this.y1 += yIncrement;
+    }
+
+
 }
-
-
 
 class Rectangle extends Shape
 {
@@ -120,12 +171,18 @@ class Rectangle extends Shape
     public void paint(Graphics g) {
         g.drawRect(x1, y1, width, height);
     }
+
+    public void update(int xIncrement, int yIncrement) {
+        this.x1 += xIncrement;
+        this.y1 += yIncrement;
+    }
+
 }
 
 class Square extends Rectangle
 {
 
-    private final int x1, y1, size;
+    private int x1, y1, size;
 
     public Square(String name, int x1, int y1, int size) {
         super(name);
@@ -133,6 +190,11 @@ class Square extends Rectangle
         this.x1 = x1;
         this.y1 = y1;
         this.size = size;
+    }
+
+    public void update(int xIncrement, int yIncrement) {
+        this.x1 += xIncrement;
+        this.y1 += yIncrement;
     }
 
     public void paint(Graphics g) {
@@ -268,6 +330,32 @@ public class Main
 
                     break;
                 }
+                case "move":
+                {
+                    String shapeName = token[1];
+                    int xValue = Integer.parseInt(token[2]);
+                    int yValue = Integer.parseInt(token[3]);
+
+
+                    window.getShape(shapeName).update(xValue, yValue);
+                    window.repaint();
+
+                    break;
+                }
+                case "shapeGroup":
+                {
+                    String groupName = token[1];
+
+                    window.add(new shapeGroup(groupName));
+                }
+                case "shapeGroupAdd":
+                {
+                    String groupName = token[1];
+                    String shapeName = token[2];
+
+
+
+                }
                 case "quit":
                 {
                     finished = true;
@@ -305,6 +393,8 @@ public class Main
                 + "smiley name x1 y1 size               - draw a smiley face\n"
                 + "redraw                               - redraw the canvas\n"
                 + "resize width height                  - resize the canvas\n"
+                + "shapeGroup name                      - creates a shape group\n"
+                + "shapeGroupAdd groupName shapeName    - adds a shape to a shape group\n"
                 + "quit                                 - exit the program\n"
                 + "\n");
     }
